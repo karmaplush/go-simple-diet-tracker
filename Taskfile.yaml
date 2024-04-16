@@ -1,0 +1,12 @@
+version: "3"
+
+tasks:
+  migrate:
+    desc: "Apply migrations"
+    cmds:
+      - go run ./cmd/migrator --storage-path=./storage/simple-diet-tracker.sqlite3 --migrations-path=./migrations
+
+  run-local:
+    desc: "Run App with local config (for local development)"
+    cmds:
+      - go run ./cmd/simple-diet-tracker/main.go --config=./config/local.yaml

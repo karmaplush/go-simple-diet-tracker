@@ -1,0 +1,3 @@
+DROP TABLE IS EXISTS records;
+
+DROP TABLE IS EXISTS accounts;
