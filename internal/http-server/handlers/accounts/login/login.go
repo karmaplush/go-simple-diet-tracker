@@ -42,8 +42,8 @@ func New(
 		var req Request
 
 		if err := render.DecodeJSON(r.Body, &req); err != nil {
-			log.Error("failed to decode request body", slog.String("err", err.Error()))
 			render.Status(r, http.StatusBadRequest)
+			log.Error("failed to decode request body", slog.String("err", err.Error()))
 			render.JSON(w, r, response.ErrorMessage("invalid request"))
 			return
 		}
@@ -51,7 +51,7 @@ func New(
 		if err := validator.New().Struct(req); err != nil {
 			validateErr := err.(validator.ValidationErrors)
 			log.Info("failed to validate request body", slog.String("err", err.Error()))
-			render.Status(r, http.StatusUnauthorized)
+			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, response.ValidationError(validateErr))
 			return
 		}
@@ -69,11 +69,13 @@ func New(
 				return
 			}
 
+			render.Status(r, http.StatusInternalServerError)
 			log.Error("internal error", slog.String("err", err.Error()))
 			render.JSON(w, r, response.ErrorMessage("internal error"))
 			return
 		}
 
+		render.Status(r, http.StatusOK)
 		render.JSON(w, r, Response{
 			Token: token,
 		})

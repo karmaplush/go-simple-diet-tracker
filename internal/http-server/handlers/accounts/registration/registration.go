@@ -13,7 +13,7 @@ import (
 	"github.com/karmaplush/simple-diet-tracker/internal/lib/api/response"
 )
 
-//go:generate go run github.com/vektra/mockery/v2@v2.42.2 --name=AccountProvider
+//go:generate go run github.com/vektra/mockery/v2@v2.42.2 --name=RegistrationProvider
 type RegistrationProvider interface {
 	Registration(ctx context.Context, email string, password string) (err error)
 }
@@ -21,10 +21,6 @@ type RegistrationProvider interface {
 type Request struct {
 	Email    string `json:"email"    validate:"required,email"`
 	Password string `json:"password" validate:"required"`
-}
-
-type Response struct {
-	Token string `json:"token"`
 }
 
 func New(
@@ -58,12 +54,20 @@ func New(
 
 		if err := registration.Registration(r.Context(), req.Email, req.Password); err != nil {
 			if errors.Is(err, grpc.ErrUserExists) {
+				render.Status(r, http.StatusBadRequest)
 				render.JSON(w, r, response.ErrorMessage("user is already exists"))
 				return
 			}
 
 			if errors.Is(err, grpc.ErrInvalidArgument) {
+				render.Status(r, http.StatusBadRequest)
 				render.JSON(w, r, response.ErrorMessage("invalid credentials"))
+				return
+			}
+
+			if errors.Is(err, grpc.ErrGRPCUnexpected) {
+				render.Status(r, http.StatusInternalServerError)
+				render.JSON(w, r, response.ErrorMessage("internal error"))
 				return
 			}
 

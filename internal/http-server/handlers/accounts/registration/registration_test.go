@@ -1,8 +1,7 @@
-package login_test
+package registration_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,10 +10,12 @@ import (
 	"testing"
 
 	"github.com/karmaplush/simple-diet-tracker/internal/clients/auth/grpc"
-	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/accounts/login"
-	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/accounts/login/mocks"
+	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/accounts/registration"
+	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/accounts/registration/mocks"
+
 	"github.com/karmaplush/simple-diet-tracker/internal/lib/api/response"
 	"github.com/karmaplush/simple-diet-tracker/internal/lib/logger/handlers/slogdiscard"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/go-playground/assert.v1"
 )
@@ -26,12 +27,11 @@ const (
 	successToken    = "successjwt"
 )
 
-func TestLoginHandler(t *testing.T) {
+func TestRegistrationHandler(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		mockEmail            string
 		mockPassword         string
-		expectedToken        string
 		expectedError        error
 		expectedStatusCode   int
 		expectedErrorMessage string
@@ -41,9 +41,8 @@ func TestLoginHandler(t *testing.T) {
 			name:                 "success",
 			mockEmail:            successEmail,
 			mockPassword:         successPassword,
-			expectedToken:        successToken,
 			expectedError:        nil,
-			expectedStatusCode:   http.StatusOK,
+			expectedStatusCode:   http.StatusCreated,
 			expectedErrorMessage: "",
 			invalidDecoing:       false,
 		},
@@ -51,7 +50,6 @@ func TestLoginHandler(t *testing.T) {
 			name:                 "empty email",
 			mockEmail:            "",
 			mockPassword:         successPassword,
-			expectedToken:        "",
 			expectedError:        grpc.ErrInvalidArgument,
 			expectedStatusCode:   http.StatusBadRequest,
 			expectedErrorMessage: "validation failed",
@@ -61,7 +59,6 @@ func TestLoginHandler(t *testing.T) {
 			name:                 "empty password",
 			mockEmail:            successEmail,
 			mockPassword:         "",
-			expectedToken:        "",
 			expectedError:        grpc.ErrInvalidArgument,
 			expectedStatusCode:   http.StatusBadRequest,
 			expectedErrorMessage: "validation failed",
@@ -71,7 +68,6 @@ func TestLoginHandler(t *testing.T) {
 			name:                 "empty email & password",
 			mockEmail:            "",
 			mockPassword:         "",
-			expectedToken:        "",
 			expectedError:        grpc.ErrInvalidArgument,
 			expectedStatusCode:   http.StatusBadRequest,
 			expectedErrorMessage: "validation failed",
@@ -81,47 +77,42 @@ func TestLoginHandler(t *testing.T) {
 			name:                 "not email",
 			mockEmail:            notAnEmail,
 			mockPassword:         successPassword,
-			expectedToken:        "",
 			expectedError:        grpc.ErrInvalidArgument,
 			expectedStatusCode:   http.StatusBadRequest,
 			expectedErrorMessage: "validation failed",
 			invalidDecoing:       false,
 		},
 		{
-			name:                 "login: invalid argument",
+			name:                 "registration: user is exists",
 			mockEmail:            successEmail,
 			mockPassword:         successPassword,
-			expectedToken:        successToken,
+			expectedError:        grpc.ErrUserExists,
+			expectedStatusCode:   http.StatusBadRequest,
+			expectedErrorMessage: "user is already exists",
+			invalidDecoing:       false,
+		},
+		{
+			name:                 "registration: invalid argument",
+			mockEmail:            successEmail,
+			mockPassword:         successPassword,
 			expectedError:        grpc.ErrInvalidArgument,
-			expectedStatusCode:   http.StatusUnauthorized,
+			expectedStatusCode:   http.StatusBadRequest,
 			expectedErrorMessage: "invalid credentials",
 			invalidDecoing:       false,
 		},
 		{
-			name:                 "login: user not found",
+			name:                 "registration: unexpected error #1",
 			mockEmail:            successEmail,
 			mockPassword:         successPassword,
-			expectedToken:        successToken,
-			expectedError:        grpc.ErrUserNotFound,
-			expectedStatusCode:   http.StatusUnauthorized,
-			expectedErrorMessage: "invalid credentials",
-			invalidDecoing:       false,
-		},
-		{
-			name:                 "login: unexpected error #1",
-			mockEmail:            successEmail,
-			mockPassword:         successPassword,
-			expectedToken:        successToken,
 			expectedError:        grpc.ErrGRPCUnexpected,
 			expectedStatusCode:   http.StatusInternalServerError,
 			expectedErrorMessage: "internal error",
 			invalidDecoing:       false,
 		},
 		{
-			name:                 "login: unexpected error #2",
+			name:                 "registration: unexpected error #2",
 			mockEmail:            successEmail,
 			mockPassword:         successPassword,
-			expectedToken:        successToken,
 			expectedError:        errors.New("some unexpected service error"),
 			expectedStatusCode:   http.StatusInternalServerError,
 			expectedErrorMessage: "internal error",
@@ -131,7 +122,6 @@ func TestLoginHandler(t *testing.T) {
 			name:                 "invalid decoded json",
 			mockEmail:            successEmail,
 			mockPassword:         successPassword,
-			expectedToken:        successToken,
 			expectedError:        nil,
 			expectedStatusCode:   http.StatusBadRequest,
 			expectedErrorMessage: "invalid request",
@@ -147,12 +137,12 @@ func TestLoginHandler(t *testing.T) {
 
 			t.Parallel()
 
-			mockProvider := mocks.NewLoginProvider(t)
-			mockProvider.On("Login", context.Background(), tc.mockEmail, tc.mockPassword).
-				Return(tc.expectedToken, tc.expectedError).
+			mockProvider := mocks.NewRegistrationProvider(t)
+			mockProvider.On("Registration", mock.Anything, tc.mockEmail, tc.mockPassword).
+				Return(tc.expectedError).
 				Maybe()
 
-			handler := login.New(slogdiscard.NewDiscardLogger(), mockProvider)
+			handler := registration.New(slogdiscard.NewDiscardLogger(), mockProvider)
 
 			reqBody := fmt.Sprintf(
 				`{"email": "%s", "password": "%s"}`,
@@ -170,10 +160,9 @@ func TestLoginHandler(t *testing.T) {
 
 			req, err := http.NewRequest(
 				http.MethodPost,
-				"/accounts/login",
+				"/accounts/registration",
 				bytes.NewReader([]byte(reqBody)),
 			)
-
 			require.NoError(t, err)
 
 			responseRecorder := httptest.NewRecorder()
@@ -187,10 +176,7 @@ func TestLoginHandler(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tc.expectedErrorMessage, resp.Message)
 			} else {
-				var resp login.Response
-				err = json.Unmarshal(responseRecorder.Body.Bytes(), &resp)
 				require.NoError(t, err)
-				assert.Equal(t, tc.expectedToken, resp.Token)
 			}
 		})
 	}
