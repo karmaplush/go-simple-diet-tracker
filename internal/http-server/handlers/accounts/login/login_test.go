@@ -161,11 +161,7 @@ func TestLoginHandler(t *testing.T) {
 			)
 
 			if tc.invalidDecoing {
-				reqBody = fmt.Sprintf(
-					`{"email": "%s", "password": "%s",}`,
-					tc.mockEmail,
-					tc.mockPassword,
-				)
+				reqBody = reqBody[:len(reqBody)-1]
 			}
 
 			req, err := http.NewRequest(

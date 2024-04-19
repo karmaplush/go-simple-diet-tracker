@@ -138,7 +138,7 @@ func TestRegistrationHandler(t *testing.T) {
 			t.Parallel()
 
 			mockProvider := mocks.NewRegistrationProvider(t)
-			mockProvider.On("Registration", mock.Anything, tc.mockEmail, tc.mockPassword).
+			mockProvider.On("Registration", mock.AnythingOfType("*context.valueCtx"), tc.mockEmail, tc.mockPassword).
 				Return(tc.expectedError).
 				Maybe()
 
@@ -151,11 +151,7 @@ func TestRegistrationHandler(t *testing.T) {
 			)
 
 			if tc.invalidDecoing {
-				reqBody = fmt.Sprintf(
-					`{"email": "%s", "password": "%s",}`,
-					tc.mockEmail,
-					tc.mockPassword,
-				)
+				reqBody = reqBody[:len(reqBody)-1]
 			}
 
 			req, err := http.NewRequest(

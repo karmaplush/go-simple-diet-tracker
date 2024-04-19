@@ -12,6 +12,7 @@ import (
 	"github.com/karmaplush/simple-diet-tracker/internal/lib/api/response"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.2 --name=RecordCreator
 type RecordCreator interface {
 	CreateRecordForCurrentUser(
 		ctx context.Context,
@@ -39,10 +40,9 @@ func New(
 
 		var req Request
 
-		render.Status(r, http.StatusBadRequest)
-
 		if err := render.DecodeJSON(r.Body, &req); err != nil {
 			log.Error("failed to decode request body", slog.String("err", err.Error()))
+			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, response.ErrorMessage("invalid request"))
 			return
 		}
@@ -50,11 +50,13 @@ func New(
 		if err := validator.New().Struct(req); err != nil {
 			validateErr := err.(validator.ValidationErrors)
 			log.Info("invalid request", slog.String("err", err.Error()))
+			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, response.ValidationError(validateErr))
 			return
 		}
 
 		if err := recordCreator.CreateRecordForCurrentUser(r.Context(), req.DateRecord, req.Value); err != nil {
+			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, response.ErrorMessage("unexpected error"))
 			return
 		}
