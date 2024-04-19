@@ -35,36 +35,25 @@ func New(
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
-		var recordsDate time.Time
+		// Default value for records date (today)
+		recordsDate := time.Now().Truncate(24 * time.Hour)
 
-		dateStr := r.URL.Query().Get("date")
-		if dateStr == "" {
-			recordsDate = time.Now()
-			recordsDate = time.Date(
-				recordsDate.Year(),
-				recordsDate.Month(),
-				recordsDate.Day(),
-				0,
-				0,
-				0,
-				0,
-				recordsDate.Location(),
-			)
-		} else {
-			parsedDate, err := time.Parse(expectedQueryDateFormat, dateStr)
+		dateQueryParam := r.URL.Query().Get("date")
+
+		if dateQueryParam != "" {
+			parsedDate, err := time.Parse(expectedQueryDateFormat, dateQueryParam)
 			if err != nil {
 				render.Status(r, http.StatusBadRequest)
-				render.JSON(w, r, response.ErrorMessage("invalid date format"))
+				render.JSON(w, r,
+					response.ErrorMessage("invalid date format (YYYY-MM-DD format expected)"),
+				)
 				return
 			}
 
-			recordsDate = parsedDate
+			recordsDate = parsedDate.Truncate(24 * time.Hour)
 		}
 
-		records, err := recordProvider.GetRecordsForCurrentUser(
-			r.Context(),
-			recordsDate,
-		)
+		records, err := recordProvider.GetRecordsForCurrentUser(r.Context(), recordsDate)
 
 		if err != nil {
 
@@ -74,7 +63,7 @@ func New(
 				return
 			}
 
-			log.Error("unexpected error")
+			log.Error("unexpected error", slog.String("err", err.Error()))
 			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, response.ErrorMessage("unexpected error"))
 			return
