@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,7 +14,6 @@ import (
 	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/records/list"
 	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/records/list/mocks"
 	"github.com/karmaplush/simple-diet-tracker/internal/lib/api/response"
-	"github.com/karmaplush/simple-diet-tracker/internal/lib/logger/handlers/slogdiscard"
 	"github.com/karmaplush/simple-diet-tracker/internal/services/account"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -99,7 +99,7 @@ func TestRecordsListHandler(t *testing.T) {
 				mock.AnythingOfType("time.Time"),
 			).Return(tc.mockRecords, tc.expectedError).Maybe()
 
-			handler := list.New(slogdiscard.NewDiscardLogger(), mockProvider)
+			handler := list.New(slog.Default(), mockProvider)
 
 			url := fmt.Sprintf("/records/?date=%s", tc.dateQueryParam)
 			req, err := http.NewRequest(http.MethodGet, url, nil)

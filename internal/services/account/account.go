@@ -17,11 +17,13 @@ type Account struct {
 	accountSaver    AccountSaver
 }
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.2 --name=AccountProvider
 type AccountProvider interface {
 	AccountById(ctx context.Context, accountId int64) (account models.Account, err error)
 	AccountByUserId(ctx context.Context, userId int64) (account models.Account, err error)
 }
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.2 --name=AccountSaver
 type AccountSaver interface {
 	SaveAccount(ctx context.Context, userId int64) (uid int64, err error)
 }

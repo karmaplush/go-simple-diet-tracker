@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,7 +15,6 @@ import (
 	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/accounts/login"
 	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/accounts/login/mocks"
 	"github.com/karmaplush/simple-diet-tracker/internal/lib/api/response"
-	"github.com/karmaplush/simple-diet-tracker/internal/lib/logger/handlers/slogdiscard"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/go-playground/assert.v1"
 )
@@ -152,7 +152,7 @@ func TestLoginHandler(t *testing.T) {
 				Return(tc.expectedToken, tc.expectedError).
 				Maybe()
 
-			handler := login.New(slogdiscard.NewDiscardLogger(), mockProvider)
+			handler := login.New(slog.Default(), mockProvider)
 
 			reqBody := fmt.Sprintf(
 				`{"email": "%s", "password": "%s"}`,

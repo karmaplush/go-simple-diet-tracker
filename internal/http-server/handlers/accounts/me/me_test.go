@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,7 +13,6 @@ import (
 	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/accounts/me"
 	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/accounts/me/mocks"
 	"github.com/karmaplush/simple-diet-tracker/internal/lib/api/response"
-	"github.com/karmaplush/simple-diet-tracker/internal/lib/logger/handlers/slogdiscard"
 	"github.com/karmaplush/simple-diet-tracker/internal/services/account"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -79,7 +79,7 @@ func TestMeHandler(t *testing.T) {
 				Return(tc.mockAccount, tc.mockError).
 				Once()
 
-			handler := me.New(slogdiscard.NewDiscardLogger(), mockProvider)
+			handler := me.New(slog.Default(), mockProvider)
 
 			req, err := http.NewRequest(http.MethodGet, "/accounts/me", nil)
 			require.NoError(t, err)

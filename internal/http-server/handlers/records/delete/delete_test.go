@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,7 +14,6 @@ import (
 	deleteHandler "github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/records/delete"
 	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/records/delete/mocks"
 	"github.com/karmaplush/simple-diet-tracker/internal/lib/api/response"
-	"github.com/karmaplush/simple-diet-tracker/internal/lib/logger/handlers/slogdiscard"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/go-playground/assert.v1"
@@ -90,7 +90,7 @@ func TestDeleteRecordHandler(t *testing.T) {
 			router := chi.NewRouter()
 			router.Use(middleware.URLFormat)
 
-			handler := deleteHandler.New(slogdiscard.NewDiscardLogger(), mockRemover)
+			handler := deleteHandler.New(slog.Default(), mockRemover)
 			router.Delete("/records/{recordId}", handler)
 
 			url := fmt.Sprintf("/records/%s", tc.recordIdPathParam)

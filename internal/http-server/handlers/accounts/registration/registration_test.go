@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,7 +15,6 @@ import (
 	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/accounts/registration/mocks"
 
 	"github.com/karmaplush/simple-diet-tracker/internal/lib/api/response"
-	"github.com/karmaplush/simple-diet-tracker/internal/lib/logger/handlers/slogdiscard"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/go-playground/assert.v1"
@@ -142,7 +142,7 @@ func TestRegistrationHandler(t *testing.T) {
 				Return(tc.expectedError).
 				Maybe()
 
-			handler := registration.New(slogdiscard.NewDiscardLogger(), mockProvider)
+			handler := registration.New(slog.Default(), mockProvider)
 
 			reqBody := fmt.Sprintf(
 				`{"email": "%s", "password": "%s"}`,

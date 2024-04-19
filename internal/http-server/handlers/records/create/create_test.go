@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,7 +15,6 @@ import (
 	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/records/create"
 	"github.com/karmaplush/simple-diet-tracker/internal/http-server/handlers/records/create/mocks"
 	"github.com/karmaplush/simple-diet-tracker/internal/lib/api/response"
-	"github.com/karmaplush/simple-diet-tracker/internal/lib/logger/handlers/slogdiscard"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/go-playground/assert.v1"
@@ -120,7 +120,7 @@ func TestCreateRecordHandler(t *testing.T) {
 				tc.value,
 			).Return(tc.expectedError).Maybe()
 
-			handler := create.New(slogdiscard.NewDiscardLogger(), mockCreator)
+			handler := create.New(slog.Default(), mockCreator)
 
 			reqBody := fmt.Sprintf(
 				`{"value": %d, "dateRecord": "%s"}`,
