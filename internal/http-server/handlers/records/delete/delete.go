@@ -13,6 +13,7 @@ import (
 	"github.com/karmaplush/simple-diet-tracker/internal/lib/api/response"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.2 --name=RecordRemover
 type RecordRemover interface {
 	DeleteRecordForCurrentUser(
 		ctx context.Context,
@@ -36,25 +37,27 @@ func New(
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
-		var pathParams PathParams
-
 		recordIdStr := chi.URLParam(r, "recordId")
+
 		recordId, err := strconv.ParseInt(recordIdStr, 10, 64)
 		if err != nil {
-			render.JSON(w, r, response.ErrorMessage("invalid url path record id"))
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, response.ErrorMessage("invalid record id"))
 			return
 		}
 
-		pathParams.RecordId = recordId
+		pathParams := PathParams{RecordId: recordId}
 
 		if err := validator.New().Struct(pathParams); err != nil {
 			validateErr := err.(validator.ValidationErrors)
+			render.Status(r, http.StatusBadRequest)
 			log.Info("invalid request", slog.String("err", err.Error()))
 			render.JSON(w, r, response.ValidationError(validateErr))
 			return
 		}
 
 		if err := recordRemover.DeleteRecordForCurrentUser(r.Context(), pathParams.RecordId); err != nil {
+			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, response.ErrorMessage("unexpected error"))
 			return
 		}

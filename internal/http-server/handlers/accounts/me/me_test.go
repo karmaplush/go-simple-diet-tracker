@@ -93,10 +93,10 @@ func TestMeHandler(t *testing.T) {
 			assert.Equal(t, tc.expectedCode, rr.Code)
 
 			if tc.expectedErrorMessage != "" {
-				var resp response.ErrorResponse
-				err = json.Unmarshal(rr.Body.Bytes(), &resp)
+				var errorResponse response.ErrorResponse
+				err = json.Unmarshal(rr.Body.Bytes(), &errorResponse)
 				require.NoError(t, err)
-				assert.Equal(t, tc.expectedErrorMessage, resp.Message)
+				assert.Equal(t, tc.expectedErrorMessage, errorResponse.Message)
 			} else {
 				var acc models.Account
 				err = json.Unmarshal(rr.Body.Bytes(), &acc)

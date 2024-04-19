@@ -178,10 +178,10 @@ func TestLoginHandler(t *testing.T) {
 			assert.Equal(t, tc.expectedStatusCode, responseRecorder.Code)
 
 			if tc.expectedErrorMessage != "" {
-				var resp response.ErrorResponse
-				err = json.Unmarshal(responseRecorder.Body.Bytes(), &resp)
+				var errorResponse response.ErrorResponse
+				err = json.Unmarshal(responseRecorder.Body.Bytes(), &errorResponse)
 				require.NoError(t, err)
-				assert.Equal(t, tc.expectedErrorMessage, resp.Message)
+				assert.Equal(t, tc.expectedErrorMessage, errorResponse.Message)
 			} else {
 				var resp login.Response
 				err = json.Unmarshal(responseRecorder.Body.Bytes(), &resp)
